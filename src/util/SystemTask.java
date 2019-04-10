@@ -1,196 +1,213 @@
 package util;
 
-import java.awt.AWTException;
-import java.awt.Image;
-import java.awt.MenuItem;
-import java.awt.PopupMenu;
-import java.awt.SystemTray;
-import java.awt.Toolkit;
-import java.awt.TrayIcon;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.filechooser.FileNameExtensionFilter;
-
 import model.Command;
 import ui.View;
 
+import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.UserDefinedFileAttributeView;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public class SystemTask implements ActionListener {
-	SystemTray tray;
-	TrayIcon trayIcon = null;
-	MenuItem defaultItem;
-	MenuItem exitMenuItem;
-	MenuItem addCommandMenuItem;
-	CommandControllor cont;
-	String IP;
-	PopupMenu popup;
-	Map<String, PopupMenu> popupMenuMap;
-	Map<String, MenuItem> subMenuMap;
-	boolean initialBuild;
-	Image image;
+    SystemTray tray;
+    TrayIcon trayIcon = null;
+    MenuItem defaultItem;
+    MenuItem exitMenuItem;
+    MenuItem addCommandMenuItem;
+    CommandControllor cont;
+    String IP;
+    PopupMenu popup;
+    Map<String, Menu> popupMenuMap;
+    //	List<MenuItem> subMenuList;
+    Image image;
 
-	public SystemTask(CommandControllor cont, String IP) {
-		this.cont = cont;
-		this.IP = IP;
-	}
+    public SystemTask(CommandControllor cont, String IP) {
+        this.cont = cont;
+        this.IP = IP;
+    }
 
-	public void createTask() {
-		initialBuild = true;
-		if (SystemTray.isSupported()) {
-			// get the SystemTray instance
-			tray = SystemTray.getSystemTray();
-			// load an image
-			image = Toolkit.getDefaultToolkit().getImage("resources/my12.png");
+    public void createTask() {
+        if (SystemTray.isSupported()) {
+            // get the SystemTray instance
+            tray = SystemTray.getSystemTray();
+            // load an image
+            image = Toolkit.getDefaultToolkit().getImage("resources/my12.png");
 
-			buildPopUpMenu();
+            trayIcon = new TrayIcon(image, "Application Launcher");
+            buildPopUpMenu();
+            // add the tray image
+            try {
+                tray.add(trayIcon);
+            } catch (AWTException e) {
+                System.err.println(e);
+                System.exit(1);
+            }
 
-			trayIcon.displayMessage("IP Address", IP, TrayIcon.MessageType.INFO);
-			// ...
-		} else {
-			// disable tray option in your application or
-			// perform other actions
+            trayIcon.displayMessage("IP Address", IP, TrayIcon.MessageType.INFO);
+            // ...
+            // set the TrayIcon properties
+            trayIcon.addActionListener(this);
 
-		}
-	}
+            setSystsemTask();
+        } else {
+            // disable tray option in your application or
+            // perform other actions
 
-	private void buildPopUpMenu() {
-		// create a popup menu
-		popup = new PopupMenu();
-		popupMenuMap = new HashMap<String, PopupMenu>();
-		subMenuMap = new HashMap<String, MenuItem>();
-		buildCommandMenuList();
-		buildMenuList();
-		trayIcon = new TrayIcon(image, "Application Launcher") FIX MENU REFRESH - CURRENTLY IT CREATES A NEW TASK ICON FOR EACH REFRESH
-		trayIcon.setPopupMenu(popup);
-		// set the TrayIcon properties
-		trayIcon.addActionListener(this);
+        }
+    }
 
-		// add the tray image
-		try {
-			tray.add(trayIcon);
-		} catch (AWTException e) {
-			System.err.println(e);
-		}
-	}
+    private void setSystsemTask() {
+        cont.setSystemTask(this);
+    }
 
-	public void buildCommandMenuList() {
-		String[] commands = cont.getCommandNames();
-		for (String c : commands) {
-			PopupMenu subMenu = new PopupMenu(c);
-			subMenu.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					String name = e.getActionCommand();
-					cont.executeCommand(name);
-				}
-			});
-			MenuItem removeMenuItem = new MenuItem("Remove " + c);
-			removeMenuItem.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					String name = e.getActionCommand();
-					cont.removeCommand(parseName(name));
-				}
-			});
-			MenuItem addArgsMenuItem = new MenuItem("Add args to " + c);
-			addArgsMenuItem.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					String name = e.getActionCommand();
-					Command command = cont.getCommand(parseName(name));
-					String args = getArgs();
-					if (args != "" && args != null) {
-						command.setArgs(args);
-						cont.saveCommandList();
-					}
-				}
-			});
-			subMenu.add(removeMenuItem);
-			subMenu.add(addArgsMenuItem);
-			subMenuMap.put(c, subMenu);
-			popupMenuMap.put(c, subMenu);
-			popup.add(subMenu);
-		}
-	}
+    public void buildPopUpMenu() {
+        // create a popup menu
+        popup = new PopupMenu();
+        popupMenuMap = new HashMap<String, Menu>();
+//		subMenuList = new ArrayList<MenuItem>();
+        buildCommandMenuList();
+        buildMenuList();
+        trayIcon.setPopupMenu(popup);
 
-	protected String parseName(String name) {
-		String[] parts = name.split(" ");
-		return parts[parts.length - 1];
-	}
+    }
 
-	public void buildMenuList() {
-		if (initialBuild) {
-			exitMenuItem = new MenuItem("Exit");
-			exitMenuItem.addActionListener(this);
-			addCommandMenuItem = new MenuItem("Add application");
-			addCommandMenuItem.addActionListener(this);
+    private void buildCommandMenuList() {
+        String[] commands = cont.getCommandNames();
+        for (String c : commands) {
+            Menu subMenu = new Menu(c);
+            subMenu.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    String name = e.getActionCommand();
+                    cont.executeCommand(name);
+                }
+            });
+            MenuItem removeMenuItem = new MenuItem("Remove " + c);
+            removeMenuItem.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    String name = e.getActionCommand();
+                    if (cont.removeCommand(parseName(name), false)) {
+                        buildPopUpMenu();
+                    }
+                }
+            });
+            MenuItem addArgsMenuItem = new MenuItem("Add args to " + c);
+            addArgsMenuItem.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    String name = e.getActionCommand();
+                    Command command = cont.getCommand(parseName(name));
+                    String args = getArgs(command);
+                    if (args == "" || args == null) {
+                        //TODO: add error handling
+                    } else {
+                        command.setArgs(args);
+                        cont.saveCommandList(false);
+                    }
+                }
+            });
+            subMenu.add(removeMenuItem);
+            subMenu.add(addArgsMenuItem);
+//			subMenuList.add(subMenu);
+            popupMenuMap.put(c, subMenu);
+            popup.add(subMenu);
+        }
+    }
 
-			popup.add(addCommandMenuItem);
-			popup.add(exitMenuItem);
-			initialBuild = false;
-		}
-	}
+    protected String parseName(String name) {
+        String[] parts = name.split(" ");
+        return parts[parts.length - 1];
+    }
 
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		Object o = e.getSource();
-		if (o.equals(trayIcon)) {
-			View ui = new View(cont);
-			ui.build();
-			ui.getFrame().setVisible(true);
-			ui.getFrame().setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		}
+    private void buildMenuList() {
+        exitMenuItem = new MenuItem("Exit");
+        exitMenuItem.addActionListener(this);
+        addCommandMenuItem = new MenuItem("Add application");
+        addCommandMenuItem.addActionListener(this);
 
-		else if (o.equals(addCommandMenuItem)) {
-			Command command = selectFile();
-			if (command != null) {
-				cont.addCommand(command);
-				buildPopUpMenu();
-			}
-		}
+        popup.addSeparator();
+        popup.add(addCommandMenuItem);
+        popup.add(exitMenuItem);
+    }
 
-		// else if(o.equals(removeCommand))
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        Object o = e.getSource();
+        if (o.equals(trayIcon)) {
+            View ui = new View(cont);
+            ui.build();
+            ui.getFrame().setVisible(true);
+            ui.getFrame().setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        } else if (o.equals(addCommandMenuItem)) {
+            Command command = selectFile();
+            if (command != null) {
+                if (cont.addCommand(command, false))
+                    buildPopUpMenu();
+            }
+        }
 
-		else if (o.equals(exitMenuItem)) {
-			System.exit(0);
-		}
-	}
+        // else if(o.equals(removeCommand))
 
-	private Command selectFile() {
-		JFileChooser chooser = new JFileChooser();
-		chooser.setFileFilter(new FileNameExtensionFilter("exe", "exe"));
-		String commandPath = "";
-		int returnVal = chooser.showOpenDialog(new JPanel());
-		if (returnVal == JFileChooser.APPROVE_OPTION) {
-			commandPath = chooser.getSelectedFile().getAbsolutePath();
-		}
-		return parsePath(commandPath);
-	}
+        else if (o.equals(exitMenuItem)) {
+            System.exit(0);
+        }
+    }
 
-	private Command parsePath(String commandPath) {
-		Command result = null;
-		if (commandPath.endsWith(".exe")) {
-			String[] parts = commandPath.split("\\\\");
-			String name = parts[parts.length - 1];
-			name = name.substring(0, name.length() - 4);
-			String[] cars = name.split("");
-			String newChar = cars[0].toUpperCase();
-			name = name.replaceFirst(cars[0], newChar);
-			result = new Command(name, cont.makeCommand(commandPath));
-		}
-		return result;
-	}
+    private Command selectFile() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setFileFilter(new FileNameExtensionFilter(".exe", "exe"));
+        String commandPath = "";
+        int returnVal = chooser.showOpenDialog(new JPanel());
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            commandPath = chooser.getSelectedFile().getAbsolutePath();
+        }
+        return parsePath(commandPath);
+    }
 
-	protected String getArgs() {
-		String result = "";
-		result = JOptionPane.showInputDialog("Please enter arguments");
-		// if(result=="")
-		return result;
-	}
+    private Command parsePath(String commandPath) {
+        Command result = null;
+        if (commandPath.endsWith(".exe") || commandPath.endsWith(".EXE")) {
+            String[] parts = commandPath.split("\\\\");
+            String name = parts[parts.length - 1];
+            name = name.substring(0, name.length() - 4);
+            String[] cars = name.split("");
+            String newChar = cars[0].toUpperCase();
+            name = name.replaceFirst(cars[0], newChar);
+            result = new Command(name, cont.makeCommand(commandPath));
+        }
+        return result;
+    }
+
+    protected String getArgs(Command command) {
+        String result;
+        result = JOptionPane.showInputDialog("Please enter arguments", command.getArgs());
+        // if(result=="")
+        return result;
+    }
+
+    private String getFileName(String exePath) {
+        Path path = Paths.get("someImage.jpg").toAbsolutePath();
+
+        UserDefinedFileAttributeView fileAttributeView = Files.getFileAttributeView(path, UserDefinedFileAttributeView.class);
+        List<String> allAttrs = null;
+        try {
+            allAttrs = fileAttributeView.list();
+        } catch (Exception e) {
+        }
+
+        for (String att : allAttrs) {
+            System.out.println("att = " + att);
+        }
+        return "";
+    }
+
 }

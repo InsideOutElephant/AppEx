@@ -1,17 +1,13 @@
 package run;
 
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
-
-import javax.swing.JFrame;
-import javax.swing.JList;
-
 import ui.View;
 import util.CommandControllor;
 import util.ServerUtil;
 import util.SystemTask;
+
+import javax.swing.*;
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
 
 public class Main {
 	private CommandControllor cont;

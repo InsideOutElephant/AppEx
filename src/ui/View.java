@@ -1,28 +1,17 @@
 package ui;
 
-import java.awt.Font;
+import model.Command;
+import util.CommandControllor;
+
+import javax.swing.*;
+import javax.swing.border.TitledBorder;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.swing.JButton;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextField;
-import javax.swing.border.TitledBorder;
-
-import model.Command;
-import util.CommandControllor;
 
 public class View {
 	private CommandControllor cont = new CommandControllor();
@@ -56,39 +45,39 @@ public class View {
 		uiMap.put("argsTF", argsTF);
 		uiMap.put("nameTF", nameTF);
 
-		frame.setTitle("Command Executer");
+        frame.setTitle("Application Executer");
 		frame.setBounds(100, 100, 500, 400);
 		frame.getContentPane().setLayout(null);
 
 		listPanel();
 		navPanel();
 		displayPanel();
-		menu();
+//		menu();
 	}
 
 	private void menu() {
-		JMenuBar menuBar = new JMenuBar();
-		frame.setJMenuBar(menuBar);
-
-		JMenu optionsMenu = new JMenu("Options");
-		menuBar.add(optionsMenu);
-
-		JMenuItem mntmSaveAll = new JMenuItem("Save All");
-		mntmSaveAll.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				cont.saveCommandList();
-			}
-		});
-		optionsMenu.add(mntmSaveAll);
-
-		JMenuItem mntmLoad = new JMenuItem("Load");
-		mntmLoad.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				cont.loadData();
-				refreshList();
-			}
-		});
-		optionsMenu.add(mntmLoad);
+//		JMenuBar menuBar = new JMenuBar();
+//		frame.setJMenuBar(menuBar);
+//
+//		JMenu optionsMenu = new JMenu("Options");
+//		menuBar.add(optionsMenu);
+//
+//		JMenuItem mntmSaveAll = new JMenuItem("Save All");
+//		mntmSaveAll.addActionListener(new ActionListener() {
+//			public void actionPerformed(ActionEvent arg0) {
+//				cont.saveCommandList();
+//			}
+//		});
+//		optionsMenu.add(mntmSaveAll);
+//
+//		JMenuItem mntmLoad = new JMenuItem("Load");
+//		mntmLoad.addActionListener(new ActionListener() {
+//			public void actionPerformed(ActionEvent arg0) {
+//				cont.loadData();
+//				refreshList();
+//			}
+//		});
+//		optionsMenu.add(mntmLoad);
 	}
 
 	private void displayPanel() {
@@ -167,9 +156,10 @@ public class View {
 		JButton removeBut = new JButton("Remove");
 		removeBut.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				cont.removeCommand(list.getSelectedValue().toString());
+                cont.removeCommand(list.getSelectedValue(), true);
 				refreshList();
 				clearFields();
+
 			}
 		});
 		removeBut.setBounds(329, 0, 130, 53);
@@ -181,7 +171,7 @@ public class View {
 				Command command = new Command(nameTF.getText(), cont.makeCommand(commandTF.getText()));
 				if (!argsTF.getText().isEmpty())
 					command.setArgs(argsTF.getText());
-				cont.addCommand(command);
+                cont.addCommand(command, true);
 				clearFields();
 				refreshList();
 			}
