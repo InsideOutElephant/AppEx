@@ -17,17 +17,16 @@ import java.util.List;
 import java.util.Map;
 
 public class SystemTask implements ActionListener {
-    SystemTray tray;
-    TrayIcon trayIcon = null;
-    MenuItem defaultItem;
-    MenuItem exitMenuItem;
-    MenuItem addCommandMenuItem;
-    CommandControllor cont;
-    String IP;
-    PopupMenu popup;
-    Map<String, Menu> popupMenuMap;
-    //	List<MenuItem> subMenuList;
-    Image image;
+    private SystemTray tray;
+    private TrayIcon trayIcon = null;
+    private MenuItem exitMenuItem;
+    private MenuItem addCommandMenuItem;
+    private final CommandControllor cont;
+    private final String IP;
+    private PopupMenu popup;
+    private Map<String, Menu> popupMenuMap;
+    private Image image;
+    private MenuItem portMenuItem;
 
     public SystemTask(CommandControllor cont, String IP) {
         this.cont = cont;
@@ -50,31 +49,29 @@ public class SystemTask implements ActionListener {
                 System.err.println(e);
                 System.exit(1);
             }
-
-            trayIcon.displayMessage("IP Address", IP, TrayIcon.MessageType.INFO);
+            if (cont.isPort())
+                trayIcon.displayMessage("IP Address : Port", IP + ":" + cont.getPort(), TrayIcon.MessageType.INFO);
+            else {
+                trayIcon.displayMessage("Please set a port", "Port needed to start listening for commands", TrayIcon.MessageType.WARNING);
+            }
             // ...
             // set the TrayIcon properties
             trayIcon.addActionListener(this);
 
-            setSystsemTask();
-        } else {
-            // disable tray option in your application or
-            // perform other actions
-
+            setContSystemTask();
         }
     }
 
-    private void setSystsemTask() {
+    private void setContSystemTask() {
         cont.setSystemTask(this);
     }
 
     public void buildPopUpMenu() {
         // create a popup menu
         popup = new PopupMenu();
-        popupMenuMap = new HashMap<String, Menu>();
-//		subMenuList = new ArrayList<MenuItem>();
+        popupMenuMap = new HashMap<>();
         buildCommandMenuList();
-        buildMenuList();
+        buildStaticMenuItems();
         trayIcon.setPopupMenu(popup);
 
     }
@@ -83,58 +80,52 @@ public class SystemTask implements ActionListener {
         String[] commands = cont.getCommandNames();
         for (String c : commands) {
             Menu subMenu = new Menu(c);
-            subMenu.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    String name = e.getActionCommand();
-                    cont.executeCommand(name);
-                }
+            subMenu.addActionListener(e -> {
+                String name = e.getActionCommand();
+                cont.executeCommand(name);
             });
             MenuItem removeMenuItem = new MenuItem("Remove " + c);
-            removeMenuItem.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    String name = e.getActionCommand();
-                    if (cont.removeCommand(parseName(name), false)) {
-                        buildPopUpMenu();
-                    }
+            removeMenuItem.addActionListener(e -> {
+                String name = e.getActionCommand();
+                if (cont.removeCommand(parseName(name), false)) {
+                    buildPopUpMenu();
                 }
             });
             MenuItem addArgsMenuItem = new MenuItem("Add args to " + c);
-            addArgsMenuItem.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    String name = e.getActionCommand();
-                    Command command = cont.getCommand(parseName(name));
-                    String args = getArgs(command);
-                    if (args == "" || args == null) {
-                        //TODO: add error handling
-                    } else {
-                        command.setArgs(args);
-                        cont.saveCommandList(false);
-                    }
+            addArgsMenuItem.addActionListener(e -> {
+                String name = e.getActionCommand();
+                Command command = cont.getCommand(parseName(name));
+                String args = getArgs(command);
+                if (args.equals("") || args == null) {
+                    //TODO: add error handling
+                } else {
+                    command.setArgs(args);
+                    cont.saveCommandList(false);
                 }
             });
             subMenu.add(removeMenuItem);
             subMenu.add(addArgsMenuItem);
-//			subMenuList.add(subMenu);
             popupMenuMap.put(c, subMenu);
             popup.add(subMenu);
         }
     }
 
-    protected String parseName(String name) {
+    private String parseName(String name) {
         String[] parts = name.split(" ");
         return parts[parts.length - 1];
     }
 
-    private void buildMenuList() {
+    private void buildStaticMenuItems() {
         exitMenuItem = new MenuItem("Exit");
         exitMenuItem.addActionListener(this);
         addCommandMenuItem = new MenuItem("Add application");
         addCommandMenuItem.addActionListener(this);
+        portMenuItem = new MenuItem("Set Port");
+        portMenuItem.addActionListener(this);
 
         popup.addSeparator();
+
+        popup.add(portMenuItem);
         popup.add(addCommandMenuItem);
         popup.add(exitMenuItem);
     }
@@ -159,6 +150,27 @@ public class SystemTask implements ActionListener {
 
         else if (o.equals(exitMenuItem)) {
             System.exit(0);
+        } else if (o.equals(portMenuItem)) {
+            getPortInput();
+        }
+    }
+
+    private void getPortInput() {
+        int parsedInput;
+        String input = JOptionPane.showInputDialog("Please enter port number", cont.getPort());
+        try {
+            parsedInput = Integer.parseInt(input);
+            savePort(parsedInput);
+        } catch (Exception e) {
+            trayIcon.displayMessage("Incorrect Port", "Please select a numerical value between 1 and 65535", TrayIcon.MessageType.ERROR);        }
+
+    }
+
+    private void savePort(int port) {
+        if (port >= 1 && port <= 65535)
+            cont.setPort(port);
+        else {
+            trayIcon.displayMessage("Incorrect Port", "Please select a numerical value between 1 and 65535", TrayIcon.MessageType.ERROR);
         }
     }
 
@@ -187,10 +199,9 @@ public class SystemTask implements ActionListener {
         return result;
     }
 
-    protected String getArgs(Command command) {
+    private String getArgs(Command command) {
         String result;
         result = JOptionPane.showInputDialog("Please enter arguments", command.getArgs());
-        // if(result=="")
         return result;
     }
 
@@ -203,7 +214,7 @@ public class SystemTask implements ActionListener {
             allAttrs = fileAttributeView.list();
         } catch (Exception e) {
         }
-
+        if (allAttrs == null) return "";
         for (String att : allAttrs) {
             System.out.println("att = " + att);
         }

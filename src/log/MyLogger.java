@@ -1,6 +1,6 @@
 package log;
 
 
-public class MyLogger  {
+class MyLogger  {
 
 }

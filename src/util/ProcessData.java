@@ -5,15 +5,16 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ProcessData implements Runnable {
-	private Socket socket;
-	private CommandControllor cont;
-	boolean enabled;
-	Logger LOG = Logger.getLogger(ProcessData.class.getName());
+class ProcessData implements Runnable {
+	private final Socket socket;
+	private final CommandControllor cont;
+	private boolean enabled;
+	private final Logger LOG = Logger.getLogger(ProcessData.class.getName());
 
 	public ProcessData(Socket socket, CommandControllor cont) {
 		this.socket = socket;
@@ -24,8 +25,8 @@ public class ProcessData implements Runnable {
 	@Override
 	public void run() {
 		System.out.println("Inside ProcessData");
-		InputStream inStream = null;
-		OutputStream outStream = null;
+		InputStream inStream;
+		OutputStream outStream;
 		Scanner scan = null;
 		PrintWriter writer = null;
 		try {
@@ -33,7 +34,7 @@ public class ProcessData implements Runnable {
 			scan = new Scanner(inStream);
 			outStream = socket.getOutputStream();
 			writer = new PrintWriter(outStream, true);
-			String command = "";
+			String command;
 			while (enabled) {
 				if (scan.hasNextLine()) {
 					command = scan.nextLine();
@@ -44,7 +45,7 @@ public class ProcessData implements Runnable {
 		} catch (IOException e) {
 		} finally {
 			try {
-				scan.close();
+				Objects.requireNonNull(scan).close();//TODO: check whatsgoing on here
 				writer.close();
 				socket.close();
 			} catch (IOException e) {

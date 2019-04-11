@@ -13,11 +13,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class CommandControllor {
-    View ui;
-    List<Command> commandList = new ArrayList<Command>();
-    List<String> commandNames = new ArrayList<String>();
-    Logger LOG = Logger.getLogger(CommandControllor.class.getName());
-    private SystemTask systenTask;
+    private List<Command> commandList = new ArrayList<>();
+    private List<String> commandNames = new ArrayList<>();
+    private final Logger LOG = Logger.getLogger(CommandControllor.class.getName());
+    private SystemTask systemTask;
+    private int port;
+    private boolean isPort;
 
     public boolean addCommand(Command command, boolean fromUI) {
         for (Command c : commandList) {
@@ -43,8 +44,8 @@ public class CommandControllor {
         return command;
     }
 
-    private List<String> getComandNames(List<Command> tempList) {
-        List<String> names = new ArrayList<String>();
+    private List<String> getCommandNames(List<Command> tempList) {
+        List<String> names = new ArrayList<>();
         for (Command c : tempList) {
             names.add(c.getName());
         }
@@ -52,7 +53,7 @@ public class CommandControllor {
     }
 
     public DefaultListModel<String> fillList() {
-        DefaultListModel<String> list = new DefaultListModel<String>();
+        DefaultListModel<String> list = new DefaultListModel<>();
 
         for (Command c : commandList) {
             list.addElement(c.getName());
@@ -65,9 +66,9 @@ public class CommandControllor {
             ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("resources/commands.dat"));
             out.writeObject(commandList);
             out.close();
-            commandNames = sortList(getComandNames(commandList));
+            commandNames = sortList(getCommandNames(commandList));
             if (ui) {
-                systenTask.buildPopUpMenu();
+                systemTask.buildPopUpMenu();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -76,12 +77,12 @@ public class CommandControllor {
 
     @SuppressWarnings({"unchecked", "resource"})
     private void loadCommandList() {
-        List<Command> tempList = null;
+        List<Command> tempList;
         try {
             ObjectInputStream in = new ObjectInputStream(new FileInputStream("resources/commands.dat"));
             tempList = (ArrayList<Command>) in.readObject();
-            commandList = new ArrayList<Command>(tempList);
-            commandNames = getComandNames(commandList);
+            commandList = new ArrayList<>(tempList);
+            commandNames = getCommandNames(commandList);
         } catch (Exception e) {
             LOG.log(Level.WARNING, e.getMessage());
         }
@@ -137,10 +138,11 @@ public class CommandControllor {
 
     public String makeCommand(String s) {
         String[] parts = s.split("\\\\");
-        String res = "";
+        StringBuilder resBuilder = new StringBuilder();
         for (int i = 0; i < parts.length - 1; i++) {
-            res += parts[i] + "\\\\";
+            resBuilder.append(parts[i]).append("\\\\"); //TODO: Test automatic stringbuilder impl
         }
+        String res = resBuilder.toString();
         res += parts[parts.length - 1];
         return res;
     }
@@ -159,16 +161,27 @@ public class CommandControllor {
 
     public void loadData() {
         loadCommandList();
-        commandNames = sortList(getComandNames(commandList));
+        loadPort();
+        commandNames = sortList(getCommandNames(commandList));
+    }
+
+    private void loadPort() {
+        int tempPort;
+        try {
+            ObjectInputStream in = new ObjectInputStream(new FileInputStream("resources/port.dat"));
+            tempPort = (Integer) in.readObject();
+            if(tempPort>=1&&tempPort<=65535){
+                port=tempPort;
+                isPort = true;
+            }
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, e.getMessage());
+        }
     }
 
     public String getCommandListJSON() {
         Gson gson = new Gson();
-        return gson.toJson(getComandNames(commandList).toArray());
-    }
-
-    public void setUI(View ui) {
-        this.ui = ui;
+        return gson.toJson(getCommandNames(commandList).toArray());
     }
 
     public String[] getCommandNames() {
@@ -177,12 +190,34 @@ public class CommandControllor {
 
     private void updateCommand(Command command, boolean fromUI) {
         if (commandList.contains(command)) {
-//			commandList.remove(command);
             saveCommandList(fromUI);
         }
     }
 
     public void setSystemTask(SystemTask systemTask) {
-        this.systenTask = systemTask;
+        this.systemTask = systemTask;
+    }
+
+    public boolean isPort() {
+        return isPort;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+        savePort();
+    }
+
+    private void savePort(){
+        try {
+            ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("resources/port.dat"));
+            out.writeObject(port);
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

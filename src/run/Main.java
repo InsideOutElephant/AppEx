@@ -5,39 +5,30 @@ import util.CommandControllor;
 import util.ServerUtil;
 import util.SystemTask;
 
-import javax.swing.*;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
 
-public class Main {
-	private CommandControllor cont;
-	private JFrame frame;
-	private View ui;
-	private ServerUtil serverUtil;
+class Main {
+	private final CommandControllor cont;
+	private final ServerUtil serverUtil;
 
-	public Main(CommandControllor cont, View ui, ServerUtil serverUtil) {
+	private Main(CommandControllor cont, ServerUtil serverUtil) {
 		this.cont = cont;
-		this.ui = ui;
 		this.serverUtil = serverUtil;
 	}
 
 	public static void main(String[] args) {
 		CommandControllor cont = new CommandControllor();
-		JFrame frame = new JFrame();
-		JList<String> list = new JList<String>();
 		ServerUtil serverUtil = new ServerUtil(cont);
-		View ui = new View(cont);
-		cont.setUI(ui);
-		Main main = new Main(cont, ui, serverUtil);
+		Main main = new Main(cont, serverUtil);
 		main.initialize();
 	}
 
 	private void initialize() {
 		cont.loadData();
+		if(cont.isPort()) serverUtil.setPort(cont.getPort());
 		serverUtil.start();
 		setOnExit();
-//		ui.build();
-//		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		
 		String IP = "Error: Could not get IP address";
 		try {

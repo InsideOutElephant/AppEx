@@ -6,27 +6,25 @@ import util.CommandControllor;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.Map;
 
 public class View {
-	private CommandControllor cont = new CommandControllor();
-	private JFrame frame;
+	private final CommandControllor cont;
+	private final JFrame frame;
 	private JTextField commandTF;
 	private JTextField argsTF;
 	private JTextField nameTF;
-	private JList<String> list;
+	private final JList<String> list;
 
-	private static Map<String, JTextField> uiMap = new HashMap<String, JTextField>();
+	private static final Map<String, JTextField> uiMap = new HashMap<>();
 
 	public View(CommandControllor cont) {
 		this.cont = cont;
 		this.frame = new JFrame();
-		this.list = new JList<String>();
+		this.list = new JList<>();
 	}
 
 	/**
@@ -52,33 +50,9 @@ public class View {
 		listPanel();
 		navPanel();
 		displayPanel();
-//		menu();
 	}
 
-	private void menu() {
-//		JMenuBar menuBar = new JMenuBar();
-//		frame.setJMenuBar(menuBar);
-//
-//		JMenu optionsMenu = new JMenu("Options");
-//		menuBar.add(optionsMenu);
-//
-//		JMenuItem mntmSaveAll = new JMenuItem("Save All");
-//		mntmSaveAll.addActionListener(new ActionListener() {
-//			public void actionPerformed(ActionEvent arg0) {
-//				cont.saveCommandList();
-//			}
-//		});
-//		optionsMenu.add(mntmSaveAll);
-//
-//		JMenuItem mntmLoad = new JMenuItem("Load");
-//		mntmLoad.addActionListener(new ActionListener() {
-//			public void actionPerformed(ActionEvent arg0) {
-//				cont.loadData();
-//				refreshList();
-//			}
-//		});
-//		optionsMenu.add(mntmLoad);
-	}
+
 
 	private void displayPanel() {
 		JPanel displayPanel = new JPanel();
@@ -124,17 +98,13 @@ public class View {
 		JButton openBut = new JButton("...");
 		openBut.setBounds(283, 137, 25, 31);
 		displayPanel.add(openBut);
-		openBut.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				JFileChooser chooser = new JFileChooser();
-				int returnVal = chooser.showOpenDialog(displayPanel);
-				if (returnVal == JFileChooser.APPROVE_OPTION) {
-					commandTF.setText(chooser.getSelectedFile().getAbsolutePath());
-				}
-			}
-		});
+		openBut.addActionListener(e -> {
+            JFileChooser chooser = new JFileChooser();
+            int returnVal = chooser.showOpenDialog(displayPanel);
+            if (returnVal == JFileChooser.APPROVE_OPTION) {
+                commandTF.setText(chooser.getSelectedFile().getAbsolutePath());
+            }
+        });
 
 	}
 
@@ -145,43 +115,34 @@ public class View {
 		navPanel.setLayout(null);
 
 		JButton runBut = new JButton("Execute");
-		runBut.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				cont.executeCommand(list.getSelectedValue());
-			}
-		});
+		runBut.addActionListener(arg0 -> cont.executeCommand(list.getSelectedValue()));
 		runBut.setBounds(23, 0, 130, 53);
 		navPanel.add(runBut);
 
 		JButton removeBut = new JButton("Remove");
-		removeBut.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-                cont.removeCommand(list.getSelectedValue(), true);
-				refreshList();
-				clearFields();
+		removeBut.addActionListener(e -> {
+cont.removeCommand(list.getSelectedValue(), true);
+            refreshList();
+            clearFields();
 
-			}
-		});
+        });
 		removeBut.setBounds(329, 0, 130, 53);
 		navPanel.add(removeBut);
 
 		JButton saveBut = new JButton("Save");
-		saveBut.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				Command command = new Command(nameTF.getText(), cont.makeCommand(commandTF.getText()));
-				if (!argsTF.getText().isEmpty())
-					command.setArgs(argsTF.getText());
-                cont.addCommand(command, true);
-				clearFields();
-				refreshList();
-			}
-
-		});
+		saveBut.addActionListener(arg0 -> {
+            Command command = new Command(nameTF.getText(), cont.makeCommand(commandTF.getText()));
+            if (!argsTF.getText().isEmpty())
+                command.setArgs(argsTF.getText());
+cont.addCommand(command, true);
+            clearFields();
+            refreshList();
+        });
 		saveBut.setBounds(176, 0, 130, 53);
 		navPanel.add(saveBut);
 	}
 
-	protected void clearFields() {
+	private void clearFields() {
 		commandTF.setText("");
 		argsTF.setText("");
 		nameTF.setText("");
@@ -215,7 +176,7 @@ public class View {
 		});
 	}
 
-	protected void fillDetails(Command command) {
+	private void fillDetails(Command command) {
 		if (command != null) {
 			nameTF.setText(command.getName());
 			argsTF.setText(command.getArgs());
@@ -228,9 +189,11 @@ public class View {
 			list.setModel(cont.fillList());
 	}
 
-	public Map<String, JTextField> getUIMap() {
-		return uiMap;
-	}
+// --Commented out by Inspection START (10/04/2019 23:50):
+//	public Map<String, JTextField> getUIMap() {
+//		return uiMap;
+//	}
+// --Commented out by Inspection STOP (10/04/2019 23:50)
 
 	public JFrame getFrame() {
 		return frame;
