@@ -40,7 +40,7 @@ public class CommandControllor {
         for (Command c : commandList) {
             if (c.getName().equals(name))
                 command = c;
-        }
+    }
         return command;
     }
 
@@ -219,5 +219,13 @@ public class CommandControllor {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public List<Command> getCommandList() {
+        return commandList;
+    }
+
+    public int getCommandListLength() {
+        return 0; // TODO: Find actual length of the message
     }
 }

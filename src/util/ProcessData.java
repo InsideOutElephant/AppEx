@@ -1,10 +1,15 @@
 package util;
 
+import model.Command;
+import model.Message;
+import model.MessageType;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
 import java.util.logging.Level;
@@ -31,6 +36,10 @@ class ProcessData implements Runnable {
 		PrintWriter writer = null;
 		try {
 			inStream = socket.getInputStream();
+			Message inboundMessage = new MessageUtils().getMessage(inStream);
+			Message outboundMessage = parseMessage(inboundMessage);
+			
+			
 			scan = new Scanner(inStream);
 			outStream = socket.getOutputStream();
 			writer = new PrintWriter(outStream, true);
@@ -54,6 +63,29 @@ class ProcessData implements Runnable {
 			}
 		}
 
+	}
+
+	private Message parseMessage(Message message) {
+		Message result = null;
+
+		switch (message.getType()){
+
+			case READ:
+				List<Command> commandList = cont.getCommandList();
+				MessageType type = MessageType.READ;
+				int length = cont.getCommandListLength();
+				result = new Message(commandList, length, type);
+				break;
+			case EXECUTE:
+				break;
+			case MODIFY:
+				break;
+			case DELETE:
+				break;
+			case CREATE:
+				break;
+		}
+		return result;
 	}
 
 	private String executeCommand(String command) {
