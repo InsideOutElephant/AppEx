@@ -35,14 +35,14 @@ public class MessageUtils {
     }
 
     public int getMessageLength(Message message) {
-        return message.getLength();
+        return message.toString().length(); // TODO: Get actual length - more than likely not needed at all as objects are suing java serialisation and not json
     }
 
     public MessageType getMessageType(Message message) {
         return message.getType();
     }
 
-    public List<Command> getCommandList(Message message){
+    public List<Command> getCommandList(Message message) {
         return message.getCommandList();
     }
 

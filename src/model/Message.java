@@ -1,31 +1,28 @@
 package model;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Message implements Serializable {
-    private Command command;
     private List<Command> commandList;
-    private int length;
     private MessageType type;
+    private boolean success;
 
     public Message() {
     }
 
-    public Message(Command command, int length, MessageType type) {
-        this.command = command;
-        this.length = length;
+    public Message(Command command, MessageType type, boolean success) {
+        this.commandList = new ArrayList<Command>();
+        this.commandList.add(command);
         this.type = type;
+        this.success = success;
     }
 
-    public Message(List<Command> commandList, int length, MessageType type) {
+    public Message(List<Command> commandList, MessageType type, boolean success) {
         this.commandList = commandList;
-        this.length = length;
         this.type = type;
-    }
-
-    public int getLength() {
-        return length;
+        this.success = success;
     }
 
     public MessageType getType() {
@@ -33,10 +30,16 @@ public class Message implements Serializable {
     }
 
     public Command getCommand() {
-        return command;
+        if (commandList.size() > 0)
+            return commandList.get(0);
+        else return null;
     }
 
     public List<Command> getCommandList() {
         return commandList;
+    }
+
+    public boolean isSuccess() {
+        return success;
     }
 }

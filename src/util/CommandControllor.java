@@ -2,7 +2,6 @@ package util;
 
 import com.google.gson.Gson;
 import model.Command;
-import ui.View;
 
 import javax.swing.*;
 import java.io.*;
@@ -40,7 +39,7 @@ public class CommandControllor {
         for (Command c : commandList) {
             if (c.getName().equals(name))
                 command = c;
-    }
+        }
         return command;
     }
 
@@ -170,8 +169,8 @@ public class CommandControllor {
         try {
             ObjectInputStream in = new ObjectInputStream(new FileInputStream("resources/port.dat"));
             tempPort = (Integer) in.readObject();
-            if(tempPort>=1&&tempPort<=65535){
-                port=tempPort;
+            if (tempPort >= 1 && tempPort <= 65535) {
+                port = tempPort;
                 isPort = true;
             }
         } catch (Exception e) {
@@ -211,7 +210,7 @@ public class CommandControllor {
         savePort();
     }
 
-    private void savePort(){
+    private void savePort() {
         try {
             ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("resources/port.dat"));
             out.writeObject(port);
@@ -227,5 +226,18 @@ public class CommandControllor {
 
     public int getCommandListLength() {
         return 0; // TODO: Find actual length of the message
+    }
+
+    public boolean modifyCommand(Command command) {
+        if (commandNames.contains(command.getName())) {
+            for (Command c : commandList) {
+                if (c.getName().equals(command.getName())) {
+                    c = command;
+                    saveCommandList(false);
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

@@ -5,5 +5,6 @@ public enum MessageType {
     EXECUTE,
     MODIFY,
     DELETE,
-    CREATE
+    CREATE,
+    RESPONSE
 }
