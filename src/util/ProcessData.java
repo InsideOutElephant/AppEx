@@ -1,128 +1,156 @@
 package util;
 
-import model.Command;
-import model.Message;
-import model.MessageType;
+import com.nmn.keystroke.java.Command;
+import com.nmn.keystroke.java.Message;
+import com.nmn.keystroke.java.MessageType;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
 import java.util.List;
-import java.util.Objects;
-import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 class ProcessData implements Runnable {
     private final Socket socket;
-    private final CommandControllor cont;
-    private boolean enabled;
+    private final CommandController cont;
     private final Logger LOG = Logger.getLogger(ProcessData.class.getName());
+    private boolean enabled;
 
-    public ProcessData(Socket socket, CommandControllor cont) {
+    public ProcessData(Socket socket, CommandController cont) { // TODO: Finish implementing id in command object and change toa map in the controller
         this.socket = socket;
         this.cont = cont;
-        enabled = true;
+        this.enabled = true;
     }
 
     @Override
     public void run() {
         System.out.println("Inside ProcessData");
-        InputStream inStream;
-        OutputStream outStream;
-        Scanner scan = null;
-        PrintWriter writer = null;
+        InputStream inputStream;
+        OutputStream outputStream;
+        ObjectInputStream objectInputStream;
+        Message request;
         try {
-            inStream = socket.getInputStream();
-            Message inboundMessage = new MessageUtils().getMessage(inStream);
-            Message outboundMessage = parseMessage(inboundMessage);
-
-
-            scan = new Scanner(inStream);
-            outStream = socket.getOutputStream();
-            writer = new PrintWriter(outStream, true);
-            String command;
+            inputStream = socket.getInputStream();
+            outputStream = socket.getOutputStream();
+            objectInputStream = new ObjectInputStream(inputStream);
+            ObjectOutputStream out = new ObjectOutputStream(outputStream);
             while (enabled) {
-                if (scan.hasNextLine()) {
-                    command = scan.nextLine();
-                    String response = executeCommand(command);
-                    writer.println(response);
+                try {
+                    request = (Message) objectInputStream.readObject();
+
+                    LOG.log(Level.INFO, "RECEIVING: " + request.toString());
+                    Message response = parseMessage(request); //TODO: add try catch for
+                    if (response != null) {
+                        out.writeObject(response);
+                        out.flush();
+                        LOG.log(Level.INFO, "SENDING: " + response.toString());
+                    }
+                } catch (EOFException eof) {
+                    LOG.log(Level.WARNING, "EOF occurred - closing connection");
+                    enabled = false;
+                 //   handle(eof); //TODO maybe not print this - could be a lot of handling
+                } catch (IOException e) {
+                    handle(e);
+                }catch (ClassNotFoundException e) {
+                    handle(e);
                 }
             }
-        } catch (IOException e) {
+        } catch (IOException ioe) {
+
         } finally {
             try {
-                Objects.requireNonNull(scan).close();//TODO: check whatsgoing on here
-                writer.close();
                 socket.close();
-            } catch (IOException e) {
-                System.out.println(e.getMessage());
-                LOG.log(Level.WARNING, e.getMessage());
+            } catch (Exception e) {
+                handle(e);
             }
         }
+    }
 
+    private void handle(Exception e) {
+        e.printStackTrace();
+        LOG.log(Level.WARNING, "IO Exception");
+        StringBuilder stack = new StringBuilder();
+        for (StackTraceElement element : e.getStackTrace())
+            stack.append(element.getClassName()).append(": ").append(element.getMethodName()).append(": ").append(element.getLineNumber()).append("\n");
+        LOG.log(Level.WARNING, e.getMessage());
+        LOG.log(Level.WARNING, stack.toString());
     }
 
     private Message parseMessage(Message message) {
         Message response = null;
-        Command command = null;
-        boolean result = false;
+        Command command;
+        boolean result;
+        if (message != null) {
+            switch (message.getType()) {
 
-        switch (message.getType()) {
-
-            case READ:
-                List<Command> commandList = cont.getCommandList();
-                response = new Message(commandList, MessageType.RESPONSE, true);
-                break;
-            case EXECUTE:
-                command = message.getCommand();
-                result = cont.executeCommand(command.getName());
-                response = new Message(cont.getCommandList(), MessageType.RESPONSE, result);
-                break;
-            case MODIFY:
-                command = message.getCommand();
-                result = cont.modifyCommand(command);
-                response = new Message(cont.getCommandList(), MessageType.RESPONSE, result);
-                break;
-            case DELETE:
-                command = message.getCommand();
-                result = cont.removeCommand(command.getName(), false);
-                response = new Message(cont.getCommandList(), MessageType.RESPONSE, result);
-                break;
-            case CREATE:
-                command = message.getCommand();
-                result = cont.addCommand(command, false);
-                response = new Message(cont.getCommandList(), MessageType.RESPONSE, result);
-                break;
-            case RESPONSE:
-                break;
+                case CREATE:
+                    command = message.getCommand();
+                    result = cont.addCommand(command, false);
+                    response = new Message(MessageType.RESPONSE, result); //TODO: Test creation of
+                    break;
+                case READ:
+                    List<Command> commandList = cont.getCommandList();
+                    response = new Message(commandList, MessageType.RESPONSE, true);
+                    break;
+                case UPDATE:
+                    command = message.getCommand();
+                    result = cont.updateCommand(command, false);
+                    response = new Message(MessageType.RESPONSE, result);
+                    break;
+                case DELETE:
+                    command = message.getCommand();
+                    result = cont.removeCommand(command.getId(), false);
+                    response = new Message(MessageType.RESPONSE, result);
+                    break;
+                case EXECUTE:
+                    command = message.getCommand();
+                    result = cont.executeCommand(command.getId());
+                    response = new Message(MessageType.RESPONSE, result);
+                    break;
+                case END:
+                    LOG.log(Level.INFO, "Client closed connection");
+                    enabled = false;
+                    break;
+                case RESPONSE:
+                    break;
+                case KEY:
+                    String keys = message.getKeys();
+                    result = cont.handleKeyPress(keys);
+                    response = new Message(MessageType.RESPONSE, result);
+                    break;
+                case PING:
+                    LOG.log(Level.INFO, "PING received");
+                    response = new Message(MessageType.PING, true);
+            }
         }
         return response;
     }
 
-    private String executeCommand(String command) {
-        String result = "";
-        if (command.equalsIgnoreCase("GET")) {
-            result = cont.getCommandListJSON();
-        } else if (command.startsWith("EXECUTE")) {
-            String commandName = parseCommand(command);
-            result = Boolean.toString(cont.executeCommand(commandName));
-        } else if (command.equalsIgnoreCase("END")) {
-            enabled = false;
-        } else {
-            System.out.println("Could not parse command");
-            LOG.log(Level.WARNING, "could not parse command");
-        }
-        return result;
-    }
+// --Commented out by Inspection START (20/04/2019 23:47):
+//    private String executeCommand(String command) {
+//        String result = "";
+//        if (command.equalsIgnoreCase("GET")) {
+//            result = cont.getCommandListJSON();
+//        } else if (command.startsWith("EXECUTE")) {
+//            String commandName = parseCommand(command);
+//            result = Boolean.toString(cont.executeCommand(commandName));
+//        } else if (command.equalsIgnoreCase("END")) {
+//            enabled = false;
+//        } else {
+//            System.out.println("Could not parse command");
+//            LOG.log(Level.WARNING, "could not parse command");
+//        }
+//        return result;
+//    }
+// --Commented out by Inspection STOP (20/04/2019 23:47)
 
-    private String parseCommand(String command) {
-        String[] parts = command.split(":");
-        if (parts.length == 2 && parts[0].equals("EXECUTE")) {
-            return parts[1];
-        } else
-            return null;
-    }
+// --Commented out by Inspection START (20/04/2019 23:51):
+//    private String parseCommand(String command) {
+//        String[] parts = command.split(":");
+//        if (parts.length == 2 && parts[0].equals("EXECUTE")) {
+//            return parts[1];
+//        } else
+//            return null;
+//    }
+// --Commented out by Inspection STOP (20/04/2019 23:51)
 }
