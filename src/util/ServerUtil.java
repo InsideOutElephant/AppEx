@@ -7,14 +7,14 @@ import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 public class ServerUtil extends Thread {
-    private int port; // TODO: save port to file and make editable from popup
+    private int port;
     private ServerSocket serverSocket;
     private boolean enabled = false;
-    private final CommandControllor cont;
-    static Logger LOG = Logger.getLogger(ServerUtil.class.getName());
+    private final CommandController cont;
+    private final static Logger LOG = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
     private boolean isPort;
 
-    public ServerUtil(CommandControllor cont) {
+    public ServerUtil(CommandController cont) {
         this.cont = cont;
         this.isPort = false;
     }
@@ -24,15 +24,18 @@ public class ServerUtil extends Thread {
             enabled = true;
             try {
                 serverSocket = new ServerSocket(port);
+                LOG.info("Server started, waiting for connection......");
                 ExecutorService pool = Executors.newFixedThreadPool(1);
                 Socket socket = null;
                 while (enabled) {
                     socket = serverSocket.accept();
+                    LOG.info("Connection established");
                     pool.execute(new ProcessData(socket, cont));
                 }
-                socket.close();
+               // socket.close();
+                LOG.info("Server shut down successfully");
             } catch (Exception e) {
-
+                LOG.warning("Server error: " + e.getStackTrace());
             }
         }
     }
